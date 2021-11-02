@@ -223,6 +223,12 @@ class SpotPerpetualArbitrageStrategy(StrategyPyBase):
         self.apply_slippage_buffers(proposal)
         if self.check_budget_constraint(proposal):
             self.execute_arb_proposal(proposal)
+            
+        for idx, p in enumerate(proposals):
+            proposals_flat_str = "spread" + str(idx) + "=" + str(p.profit_pct()) + ","
+
+        streamData = f"strategy={algo_name},pair={self._spot_market_info.trading_pair},{proposals_flat_str}"
+        streamer.sendto(streamData.encode('utf-8'), (ip, port))
 
     def update_strategy_state(self):
         """
