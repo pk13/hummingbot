@@ -152,6 +152,8 @@ def main():
         "web3",
         "websockets",
         "yarl",
+        "aioresponses",
+        "socket",
     ]
 
     cython_kwargs = {
