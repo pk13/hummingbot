@@ -188,11 +188,21 @@ class SpotPerpetualArbitrageStrategy(StrategyPyBase):
         The main procedure for the arbitrage strategy.
         """
         self.update_strategy_state()
+        proposals = await self.create_base_proposals()
+        
+        try:
+            for idx, p in enumerate(proposals):
+                proposals_flat_str = "spread" + str(idx) + "=" + str(p.profit_pct()) + ","
+
+            streamData = f"strategy={algo_name},pair={self._spot_market_info.trading_pair},{proposals_flat_str}"
+            streamer.sendto(streamData.encode('utf-8'), (ip, port))
+        except Exception as e:
+            self.logger().info(f"Caught exception with message: {e}")
+            
         if self._strategy_state in (StrategyState.Opening, StrategyState.Closing):
             return
         if self.strategy_state == StrategyState.Closed and self._next_arbitrage_opening_ts > self.current_timestamp:
             return
-        proposals = await self.create_base_proposals()
         if self._strategy_state == StrategyState.Opened:
             perp_is_buy = False if self.perp_positions[0].amount > 0 else True
             proposals = [p for p in proposals if p.perp_side.is_buy == perp_is_buy and p.profit_pct() >=
@@ -210,12 +220,6 @@ class SpotPerpetualArbitrageStrategy(StrategyPyBase):
         self.apply_slippage_buffers(proposal)
         if self.check_budget_constraint(proposal):
             self.execute_arb_proposal(proposal)
-            
-        for idx, p in enumerate(proposals):
-            proposals_flat_str = "spread" + str(idx) + "=" + str(p.profit_pct()) + ","
-
-        streamData = f"strategy={algo_name},pair={self._spot_market_info.trading_pair},{proposals_flat_str}"
-        streamer.sendto(streamData.encode('utf-8'), (ip, port))
 
     def update_strategy_state(self):
         """
