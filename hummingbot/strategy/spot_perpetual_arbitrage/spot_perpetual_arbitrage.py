@@ -191,11 +191,14 @@ class SpotPerpetualArbitrageStrategy(StrategyPyBase):
         proposals = await self.create_base_proposals()
         
         try:
+            proposals_flat_str = ""
             for idx, p in enumerate(proposals):
-                proposals_flat_str = "spread" + str(idx) + "=" + str(p.profit_pct()) + ","
+                proposals_flat_str += "spread" + str(idx) + "=" + str(p.profit_pct()) + ","
 
-            streamData = f"strategy={algo_name},pair={self._spot_market_info.trading_pair},{proposals_flat_str}"
-            streamer.sendto(streamData.encode('utf-8'), (ip, port))
+            if proposals_flat_str != '':
+                proposals_flat_str = proposals_flat_str.rstrip(',')
+            stream_data = f"hummingbot,strategy={algo_name},pair={self._spot_market_info.trading_pair} {proposals_flat_str}"
+            streamer.sendto(stream_data.encode('utf-8'), (ip, port))
         except Exception as e:
             self.logger().info(f"Caught exception with message: {e}")
             
